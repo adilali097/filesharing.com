@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bluetooth File Sharing</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      text-align: center;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 300px;
+    }
+
+    input[type="file"] {
+      margin: 20px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bluetooth File Sharing</h1>
+    <input type="file" id="fileInput">
+    <button id="sendButton">Send File via Bluetooth</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    document.getElementById('sendButton').addEventListener('click', async () => {
+      const fileInput = document.getElementById('fileInput');
+      const statusDiv = document.getElementById('status');
+
+      if (fileInput.files.length === 0) {
+        statusDiv.textContent = 'Please select a file to send.';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async (event) => {
+        const fileData = new Uint8Array(event.target.result);
+
+        try {
+          statusDiv.textContent = 'Scanning for devices...';
+
+          // Request Bluetooth device
+          const device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: ['battery_service'] }] // Replace with your Bluetooth service UUID
+          });
+
+          statusDiv.textContent = `Connected to device: ${device.name} (ID: ${device.id})`;
+
+          // Connect to GATT server
+          const server = await device.gatt.connect();
+
+          // Replace 'battery_service' and 'battery_level' with actual UUIDs
+          const service = await server.getPrimaryService('battery_service');
+          const characteristic = await service.getCharacteristic('battery_level');
+
+          // Send file data (simulated)
+          await characteristic.writeValue(fileData);
+          statusDiv.textContent = 'File sent successfully!';
+        } catch (error) {
+          statusDiv.textContent = `Error: ${error.message}`;
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
